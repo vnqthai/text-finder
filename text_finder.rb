@@ -4,8 +4,10 @@ class TextFinder
   INDENT_STR = '  '
 
   def initialize(argv)
-    @dir = validate_and_get_dir(argv)
-    @text = validate_and_get_text(argv)
+    @argv = argv
+    @dir = validate_and_get_dir
+    @text = validate_and_get_text
+    @case_sensitive = get_case_sensitive
   end
 
   def call
@@ -19,7 +21,7 @@ class TextFinder
       found_text = false
       # Loop through each line, without loading whole file (can be big) into memory
       File.foreach(file).with_index(1) do |line, line_number|
-        if line.include?(@text)
+        if match?(line)
           unless found_text
             puts file
             found_text = true
@@ -33,13 +35,21 @@ class TextFinder
 
   private
 
-  def validate_and_get_dir(argv)
-    if argv.length < 1
+  def match?(line)
+    if @case_sensitive
+      line.include? @text
+    else
+      line =~ /#{@text}/i
+    end
+  end
+
+  def validate_and_get_dir
+    if @argv.length < 1
       puts 'Need a directory as input.'
       return nil
     end
 
-    dir = argv[0]
+    dir = @argv[0]
     unless Dir.exist?(dir)
       puts 'Input is not an existing directory.'
       return nil
@@ -48,13 +58,13 @@ class TextFinder
     return dir
   end
 
-  def validate_and_get_text(argv)
-    if argv.length < 2
+  def validate_and_get_text
+    if @argv.length < 2
       puts 'Missing text to search as the 2nd argument.'
       return nil
     end
 
-    text = argv[1]
+    text = @argv[1]
     if text.nil? || text.strip.empty?
       puts 'Text to search cannot be empty.'
       return nil
@@ -62,6 +72,10 @@ class TextFinder
 
     return text
   end
+
+  def get_case_sensitive
+    @argv.length >= 3 && @argv[2] == 'sensitive'
+  end
 end
 
-TextFinder.new(ARGV).call
+TextFinder.new(ARGV).call if $0 == __FILE__
