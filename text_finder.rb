@@ -1,4 +1,8 @@
 class TextFinder
+  # Indentation string for line outputs.
+  # Usuallay spaces, but can be asterisks, dashes
+  INDENT_STR = '  '
+
   def initialize(argv)
     @dir = validate_and_get_dir(argv)
     @text = validate_and_get_text(argv)
@@ -7,21 +11,22 @@ class TextFinder
   def call
     return unless @dir && @text
 
-    Dir.chdir(@dir)
-    Dir.glob('**/*').sort.each do |file|
+    Dir.glob(File.join(@dir, '**/*')).sort.each do |file|
       # Ignore directories
       next if Dir.exist?(file)
       content = File.read(file)
 
       found_text = false
       # Loop through each line, without loading whole file (can be big) into memory
-      File.foreach(file).with_index do |line, line_number|
-        unless found_text
-          puts file
-          found_text = true
-        end
+      File.foreach(file).with_index(1) do |line, line_number|
+        if line.include?(@text)
+          unless found_text
+            puts file
+            found_text = true
+          end
 
-        puts "  #{line_number}: #{line}" if line.include?(@text)
+          puts "#{INDENT_STR}#{line_number}: #{line}"
+        end
       end
     end
   end
